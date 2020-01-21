@@ -3,7 +3,7 @@ from scipy.linalg import eig
 from typing import Mapping,Sequence,Set
 from Markov_Functions import verify_mp
 import sys
-sys.path.append('Code/Utils')
+sys.path.append('C:\\Users\\ThinkPad\\Desktop\\CME241\\Push\\Code\\Utils')
 from Generic_TypeVars import S
 from Standard_TypeVars import SSf
 
