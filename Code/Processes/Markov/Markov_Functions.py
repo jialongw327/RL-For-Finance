@@ -5,13 +5,17 @@ import numpy as np
 from typing import Mapping, Sequence, Set, Any
 from operator import itemgetter
 
+
 from Generic_TypeVars import S, A
 from Standard_TypeVars import SSf, SATSff, SASf, SAf
 from General_Utils import memoize, is_approx_eq, sum_dicts
 
 @memoize
 def find_all_states(d: Mapping[S, Any]) -> Set[S]:
-    return set(d.keys())
+    temp = list(d.keys())
+    lookup = set()  # a temporary lookup set
+    result = [x for x in temp if x not in lookup and lookup.add(x) is None]
+    return result
 
 
 @memoize

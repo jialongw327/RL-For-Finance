@@ -1,18 +1,24 @@
 import sys
 sys.path.append('C:\\Users\\ThinkPad\\Desktop\\CME241\\Push\\Code\\Utils')
 
-import numpy as np
-from MP import MP
-from MRP import MRP
+#import numpy as np
+
 from typing import Generic, Set, Mapping
+from operator import itemgetter
 
-from Markov_Functions import find_all_states, find_actions_for_states
-from Markov_Functions import find_lean_transitions, 
-from Markov_Functions import mdp_rep_to_mrp_rep1, mdp_rep_to_mrp_rep2
 from Generic_TypeVars import S, A
-from Standard_TypeVars import SSf, STSff, SATSff
-from General_Utils import zip_dict_of_tuple
+from Standard_TypeVars import SATSff
+from General_Utils import zip_dict_of_tuple, is_approx_eq
 
+#from MP import MP
+from MRP import MRP
+from Markov_Functions import find_all_states, find_actions_for_states
+from Markov_Functions import find_lean_transitions
+from Markov_Functions import mdp_rep_to_mrp_rep1, mdp_rep_to_mrp_rep2
+
+
+from Policy import Policy
+from DetPolicy import DetPolicy
 
 class MDP(Generic[S, A]):
 
@@ -27,8 +33,10 @@ class MDP(Generic[S, A]):
         # Find the transition graph without reward {state: {action: {state, prob}}}         
         self.transitions: Mapping[S, Mapping[A, Mapping[S, float]]] = \
                 {s: {a: find_lean_transitions(v1) for a, v1 in v.items()}
-                 for s, v in mdp_transition_graph.items()}     
-        print(self.transitions)        
+                 for s, v in mdp_transition_graph.items()} 
+        self.rewards: Mapping[S, Mapping[A, float]] = mdp_reward_graph
+        self.gamma: float = gamma
+        self.terminal_states: Set[S] = self.find_terminal_states()
 
     def find_sink_states(self) -> Set[S]:
         '''Sink states' rewards don't have to be 0!'''
@@ -39,7 +47,7 @@ class MDP(Generic[S, A]):
         
     def find_terminal_states(self) -> Set[S]:
         # Terminal states are sink states with reward = 0
-        sink = self.get_sink_states()
+        sink = self.find_sink_states()
         return {s for s in sink if
                 all(is_approx_eq(r, 0.0) for _, r in self.rewards[s].items())}
         
@@ -51,17 +59,17 @@ class MDP(Generic[S, A]):
     def find_value_func_dict(self, pol: Policy)\
             -> Mapping[S, float]:
         # Find v_pi(s)
-        mrp_obj = self.get_mrp(pol)
-        value_func_vec = mrp_obj.get_value_func_vec()
-        nt_vf = {mrp_obj.nt_states_list[i]: value_func_vec[i]
-                 for i in range(len(mrp_obj.nt_states_list))}
+        mrp_obj = self.find_mrp(pol)
+        value_func_vec = mrp_obj.find_value_function_vector()
+        nt_vf = {mrp_obj.not_terminal_states_list[i]: value_func_vec[i]
+                 for i in range(len(mrp_obj.not_terminal_states_list))}
         t_vf = {s: 0. for s in self.terminal_states}
         return {**nt_vf, **t_vf}
                 
     def find_act_value_func_dict(self, pol: Policy)\
             -> Mapping[S, Mapping[A, float]]:
         # Find q_pi(s, a) 
-        v_dict = self.get_value_func_dict(pol)
+        v_dict = self.find_value_func_dict(pol)
         return {s: {a: r + self.gamma * sum(p * v_dict[s1] for s1, p in
                                             self.transitions[s][a].items())
                     for a, r in v.items()}
@@ -78,7 +86,7 @@ class MDP(Generic[S, A]):
         # Find the optimal policy using policy iteration
         pol = Policy({s: {a: 1. / len(v) for a in v} for s, v in
                       self.state_action_dict.items()})
-        vf = self.get_value_func_dict(pol)
+        vf = self.find_value_func_dict(pol)
         epsilon = tol * 1e4
         while epsilon >= tol:
             pol = self.find_improved_policy(pol)
@@ -89,40 +97,71 @@ class MDP(Generic[S, A]):
         
     
 if __name__ == '__main__':
-    data = {
-        1: {
-            'a': ({1: 0.3, 2: 0.6, 3: 0.1}, 5.0),
-            'b': ({2: 0.3, 3: 0.7}, 2.8),
-            'c': ({1: 0.2, 2: 0.4, 3: 0.4}, -7.2)
-        },
-        2: {
-            'a': ({1: 0.3, 2: 0.6, 3: 0.1}, 5.0),
-            'c': ({1: 0.2, 2: 0.4, 3: 0.4}, -7.2)
-        },
-        3: {
-            'a': ({3: 1.0}, 0.0),
-            'b': ({3: 1.0}, 0.0)
-        }
-    }
+#    data = {
+#        1: {
+#            'a': ({1: 0.3, 2: 0.6, 3: 0.1}, 5.0),
+#            'b': ({2: 0.3, 3: 0.7}, 2.8),
+#            'c': ({1: 0.2, 2: 0.4, 3: 0.4}, -7.2)
+#        },
+#        2: {
+#            'a': ({1: 0.3, 2: 0.6, 3: 0.1}, 5.0),
+#            'c': ({1: 0.2, 2: 0.4, 3: 0.4}, -7.2)
+#        },
+#        3: {
+#            'a': ({3: 1.0}, 0.0),
+#            'b': ({3: 1.0}, 0.0)
+#        }
+#    }
+#        
         
-        
-    student = {
+    student = { 
             'C1': {
                 'Study': ({'C2': 1}, -2.0),
                 'FB':({'Facebook': 1}, -1.0)
                     },
+            
             'C2':{'Study': ({'C3': 1}, -2.0),
                   'SLP':({'Sleep': 1}, 0.0)
                     },
-            'C3':{'Study':({'Sleep': 1}, 0.0),
+            
+            'C3':{'Study':({'Sleep': 1}, 10.0),
                   'Pub':({'C1': 0.2,'C2': 0.4 ,'C3': 0.4}, 1.0)
                     },
+            
             'Facebook':{'FB':({'Facebook': 1}, -1.0), 'Quit':({'C1': 1}, 0.0)
                     },
-            'Sleep':{'FB':({'Sleep': 1}, 0.0),
-                     'Study':({'Sleep': 1}, 0.0),
-                     'Pub':({'Sleep': 1}, 0.0),
-                     'SLP':({'Sleep': 1}, 0.0)}
+            
+            'Sleep':{'SLP':({'Sleep': 1}, 0.0)}
             }
             
-    mdp_obj = MDP(student, 0.95)
+    policy = {
+            
+            'C1': {
+                'Study': 0.5,
+                'FB':0.5
+                    },
+                    
+            'C2':{'Study': 0.5,
+                  'SLP':0.5
+                    },
+                  
+            'C3':{'Study':0.5,
+                  'Pub':0.5
+                    },
+                  
+            'Facebook':{'FB':0.5,
+                        'Quit':0.5
+                    },
+            'Sleep':{
+                     'SLP':1
+                    }
+            }
+
+        
+    mdp_obj = MDP(student, 0.999999)
+    pol_obj = Policy(policy)
+    mrp_obj = mdp_obj.find_mrp(pol_obj)
+    
+    
+    print('The sink state is: \n',mdp_obj.find_sink_states(), "\n")
+    print('The prediction of value functions given a policy is: \n',mdp_obj.find_value_func_dict(pol_obj), "\n")

@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.linalg import eig
 from typing import Mapping,Sequence,Set
-from Markov_Functions import verify_mp
+from Markov_Functions import verify_mp, find_all_states
 import sys
 sys.path.append('C:\\Users\\ThinkPad\\Desktop\\CME241\\Push\\Code\\Utils')
 from Generic_TypeVars import S
@@ -15,6 +15,7 @@ class MP:
             self.state: Sequence[S] = list(graph.keys())
             self.transition_graph: Mapping[S, Mapping[S, float]] = graph
             self.transition_matrix: np.array = self.find_transition_matrix()
+            self.all_states_list: Sequence[S] = list(find_all_states(graph))
         else:
             raise ValueError
     
@@ -58,27 +59,23 @@ class MP:
         '''Current Graph'''
         return self.transition_graph
     
-    def find_all_states(self) -> Sequence[S]:
-        '''Current State'''
-        return self.state    
-    
     def find_sink_states(self) -> Set[S]:
         return {k for k, v in self.transition_graph.items()
                 if len(v) == 1 and k in v.keys()}
 
 if __name__=='__main__':
 
-    student = {'C1':{'C2': 0.5, 'Facebook': 0.5},
+    student = {'Facebook':{'C1': 0.1, 'Facebook': 0.9},
+               'C1':{'C2': 0.5, 'Facebook': 0.5},
                'C2':{'C3': 0.8, 'Sleep': 0.2},
                'C3':{'Pass': 0.6, 'Pub': 0.4},
                'Pass':{'Sleep': 1.0},
-               'Pub':{'C1': 0.2, 'C2': 0.4, 'C3': 0.4},
-               'Facebook':{'C1': 0.1, 'Facebook': 0.9},
+               'Pub':{'C1': 0.2, 'C2': 0.4, 'C3': 0.4},    
                'Sleep':{'Sleep': 1.0}}
 
     #test_mp=MP(transition_graph)
     test_mp=MP(student)
     print('Find transition matrix :\n',test_mp.find_transition_matrix(),'\n')
     print('Find stationary distribution:\n',test_mp.find_stationary_distribution(),'\n')
-    print('Find all states:\n',test_mp.find_all_states(),'\n')
+    print('Find all states:\n',test_mp.all_states_list,'\n')
     print('Find sink state:\n',test_mp.find_sink_states(),'\n')
