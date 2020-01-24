@@ -1,7 +1,7 @@
 import sys
 sys.path.append('C:\\Users\\ThinkPad\\Desktop\\CME241\\Push\\Code\\Utils')
 
-#import numpy as np
+import numpy as np
 
 from typing import Generic, Set, Mapping
 from operator import itemgetter
@@ -74,7 +74,17 @@ class MDP(Generic[S, A]):
                                             self.transitions[s][a].items())
                     for a, r in v.items()}
                 for s, v in self.rewards.items()}
-
+    
+    def find_iterative_policy_evaluation(self, pol:Policy) -> np.array:
+        # Iterative way to find the value functions given a policy
+        mrp = self.find_mrp(pol)
+        v0 = np.zeros(len(self.states))
+        converge = False
+        while not converge:
+            v1 = mrp.reward_vector + self.gamma*mrp.transition_matrix.dot(v0)
+            converge = is_approx_eq(np.linalg.norm(v1), np.linalg.norm(v0))
+            v0 = v1
+        return v1
     
     def find_improved_policy(self, pol: Policy) -> DetPolicy:
         # Find the policy that maximizes the act-value function (greedy)
