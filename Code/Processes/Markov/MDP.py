@@ -2,6 +2,7 @@ import sys
 sys.path.append('C:\\Users\\ThinkPad\\Desktop\\CME241\\Push\\Code\\Utils')
 
 import numpy as np
+import itertools
 
 from typing import Generic, Set, Mapping
 from operator import itemgetter
@@ -10,7 +11,7 @@ from Generic_TypeVars import S, A
 from Standard_TypeVars import SATSff
 from General_Utils import zip_dict_of_tuple, is_approx_eq
 
-#from MP import MP
+from MP import MP
 from MRP import MRP
 from Markov_Functions import find_all_states, find_actions_for_states
 from Markov_Functions import find_lean_transitions
@@ -75,8 +76,8 @@ class MDP(Generic[S, A]):
                     for a, r in v.items()}
                 for s, v in self.rewards.items()}
     
-    def find_iterative_policy_evaluation(self, pol:Policy) -> np.array:
-        # Iterative way to find the value functions given a policy
+    def policy_evaluation(self, pol:Policy) -> np.array:
+        '''Iterative way to find the value functions given a specific policy'''
         mrp = self.find_mrp(pol)
         v0 = np.zeros(len(self.states))
         converge = False
@@ -87,13 +88,14 @@ class MDP(Generic[S, A]):
         return v1
     
     def find_improved_policy(self, pol: Policy) -> DetPolicy:
-        # Find the policy that maximizes the act-value function (greedy)
+        '''Find the policy that maximizes the action-value function 
+        in one iteration (greedy)'''
         q_dict = self.find_act_value_func_dict(pol)
         return DetPolicy({s: max(v.items(), key=itemgetter(1))[0]
                           for s, v in q_dict.items()})
             
-    def find_optimal_policy(self, tol=1e-4) -> DetPolicy:
-        # Find the optimal policy using policy iteration
+    def policy_iteration(self, tol=1e-4) -> DetPolicy:
+        ''' Find the optimal policy using policy iteration '''
         pol = Policy({s: {a: 1. / len(v) for a in v} for s, v in
                       self.state_action_dict.items()})
         vf = self.find_value_func_dict(pol)
@@ -105,6 +107,51 @@ class MDP(Generic[S, A]):
             vf = new_vf
         return pol
         
+    def value_iteration_1(self, tol = 1e-4) -> DetPolicy:
+        # Initialize value-function
+        vf = np.zeros(len(self.all_states))
+        transition_graph = self.transitions
+        # action_graph = [{s:[k for k, i in v.items()] for s, v in reward_graph.items()}]
+        action_sequence_list = [[k for k, i in v.items()] for s, v in self.rewards.items()]
+        # Permute through all probable paths of actions
+        action_permutations = list(itertools.product(*action_sequence_list))
+        reward_list, prob_list = [v for s, v in self.rewards.items()], \
+        [v for s, v in self.transitions.items()]
+        # Initialize epsilon, the residual
+        epsilon = 1
+        while epsilon > tol:
+            value_function_matrix = np.zeros((len(action_permutations),len(self.all_states)))
+        # Find transition matrix and reward vector for each permutation
+            for i in range(len(action_permutations)):
+                current_rewards = []
+                current_transition_graph = {}
+                for j in range(len(self.all_states)):
+                    current_rewards.append(reward_list[j][action_permutations[i][j]])
+                    current_transition_graph[list(transition_graph.keys())[j]]\
+                = prob_list[j][action_permutations[i][j]]
+
+                mp_obj = MP(current_transition_graph)
+                value_function_matrix[i,:] = current_rewards + self.gamma \
+                * mp_obj.transition_matrix.dot(vf)     
+                
+            # Sort out the best value_function 
+            k = len(self.all_states)-1
+            value_function_matrix = value_function_matrix[value_function_matrix[:,k].argsort()]
+            while k != 0:
+                k = k-1
+                pol_ind = value_function_matrix[:,k].argsort(kind='mergesort')
+                value_function_matrix = value_function_matrix[pol_ind]   
+            # Update the residual
+            epsilon = max(np.absolute(value_function_matrix[-1,:]-vf))
+            vf = value_function_matrix[-1,:]
+        # Extract the optimal policy     
+        pol = {self.all_states[i]: action_permutations[pol_ind[0]][i] \
+               for i in range(len(self.all_states))} 
+        print(pol)
+        return DetPolicy(pol)
+    
+    def value_iteration_2(self, tol = 1e-4) -> DetPolicy:
+        return ValueError
     
 if __name__ == '__main__':
 #    data = {
@@ -175,3 +222,4 @@ if __name__ == '__main__':
     
     print('The sink state is: \n',mdp_obj.find_sink_states(), "\n")
     print('The prediction of value functions given a policy is: \n',mdp_obj.find_value_func_dict(pol_obj), "\n")
+    pol_obj_vi = mdp_obj.value_iteration_1()

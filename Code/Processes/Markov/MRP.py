@@ -57,4 +57,5 @@ if __name__ == '__main__':
     gamma = 0.9
     test_mrp = MRP(student, gamma)
     print('Get value function vector:\n',test_mrp.find_value_function_vector(),'\n')
-    print('Find reward vector:\n', test_mrp.find_reward_vector())   
+    print('Find reward vector:\n', test_mrp.find_reward_vector())
+    print(test_mrp.find_value_function_vector())
