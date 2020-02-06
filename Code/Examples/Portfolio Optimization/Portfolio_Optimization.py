@@ -1,13 +1,22 @@
 import sys
 sys.path.append('C:\\Users\\ThinkPad\\Desktop\\CME241\\Push\\Code\\Utils')
 sys.path.append('C:\\Users\\ThinkPad\\Desktop\\CME241\\Push\\Code\\Processes\\Markov')
+sys.path.append('C:\\Users\\ThinkPad\\Desktop\\CME241\\Push\\Code\\Algorithms')
+sys.path.append('C:\\Users\\ThinkPad\\Desktop\\CME241\\Push\\Code\\Algorithms\\ADP')
+sys.path.append('C:\\Users\\ThinkPad\\Desktop\\CME241\\Push\\Code\\Algorithms\\DP')
+sys.path.append('C:\\Users\\ThinkPad\\Desktop\\CME241\\Push\\Code\\Functions')
 
 from typing import Tuple, Sequence, Callable
 import numpy as np
 from Beta_Distribution import BetaDistribution
 
+from DNN_Spec import DNNSpec
+from Function_Approximation_Specification import FuncApproxSpec
 from MDP_Rep_For_ADP_PG import MDPRepForADPPG
 from MDP_Rep_For_RL_PG import MDPRepForRLPG
+
+from ADP_PG import ADPPolicyGradient
+from PG import PolicyGradient
 
 StateType = Tuple[int, float]
 ActionType = Tuple[float, ...]
