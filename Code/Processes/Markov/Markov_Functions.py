@@ -2,13 +2,14 @@ import sys
 sys.path.append('C:\\Users\\ThinkPad\\Desktop\\CME241\\Push\\Code\\Utils')
 
 import numpy as np
-from typing import Mapping, Sequence, Set, Any
+from typing import Mapping, Sequence, Set, Any, Tuple, Callable
 from operator import itemgetter
 
 
 from Generic_TypeVars import S, A
-from Standard_TypeVars import SSf, SATSff, SASf, SAf
-from General_Utils import memoize, is_approx_eq, sum_dicts
+from Standard_TypeVars import SSf, SATSff, SASf, SAf, SASTff
+from General_Utils import memoize, is_approx_eq, sum_dicts, FlattenedDict
+from scipy.stats import rv_discrete
 
 @memoize
 def find_all_states(d: Mapping[S, Any]) -> Set[S]:
@@ -33,6 +34,14 @@ def find_lean_transitions(d: Mapping[S, float]) -> Mapping[S, float]:
     return {s: v for s, v in d.items() if not is_approx_eq(v, 0.0)}
 
 
+def find_transition_matrix(tr: SSf) -> np.ndarray:
+    s_list = find_all_states(tr)
+    mat = np.zeros((len(s_list), len(s_list)))
+    for s_i in s_list:
+        for s_j in list(tr[s_i].keys()):
+            mat[s_list.index(s_i),s_list.index(s_j)] = tr[s_i][s_j]
+    return mat
+
 def verify_transitions(
     states: Set[S],
     tr_seq: Sequence[Mapping[S, float]]
@@ -56,6 +65,14 @@ def verify_mdp(mdp_data: SATSff) -> bool:
     check_actions = all(len(v) > 0 for _, v in mdp_data.items())
     val_seq = [v2 for _, v1 in mdp_data.items() for _, (v2, _) in v1.items()]
     return verify_transitions(all_st, val_seq) and check_actions
+
+@memoize
+def verify_mdp_2(mdp_data: SASTff) -> bool:
+    row_sum = [sum(list(sf.values())) for dic in mdp_data.values() for sf in dic.values()]
+    for each_row in row_sum:
+        if np.abs(each_row - 1) > 1e-8:
+            return False
+    return True
 
 @memoize
 def verify_policy(policy_data: SAf) -> bool:
@@ -98,3 +115,49 @@ def find_softmax_action_probs(
           for a, q in action_value_dict.items()}
     exp_sum = sum(np.exp(q) for q in aq.values())
     return {a: np.exp(q) / exp_sum for a, q in aq.items()}
+
+
+def find_split_MDP_graph(mdp_graph: SASTff) -> Tuple[SASf, SASf, SAf]:
+    tr = {s: {a: {s1: v2[0] for s1,v2 in v1.items()} for a,v1 in v.items()} 
+                for s,v in mdp_graph.items()}
+    rr = {s: {a: {s1: v2[1] for s1,v2 in v1.items()} for a,v1 in v.items()} 
+                for s,v in mdp_graph.items()}
+    state_reward = {s: {a: sum([v2[0]*v2[1] for s1,v2 in v1.items()]) for a,v1 in v.items()} 
+                for s,v in mdp_graph.items()}
+    return tr, rr, state_reward
+
+def flatten_sasf_dict(sasf: SASf) -> FlattenedDict:
+    return [((s, a, s1), f)
+            for s, asf in sasf.items()
+            for a, sf in asf.items()
+            for s1, f in sf.items()]
+    
+def flatten_ssf_dict(ssf: SSf) -> FlattenedDict:
+    return [((s, s1), f)
+            for s, sf in ssf.items()
+            for s1, f in sf.items()]
+    
+def unflatten_sasf_dict(q: FlattenedDict) -> SASf:
+    dsasf = {}
+    for (sas, f) in q:
+        dasf = dsasf.get(sas[0], {})
+        dsf = dasf.get(sas[1], {})
+        dsf[sas[2]] = f
+        dasf[sas[1]] = dsf
+        dsasf[sas[0]] = dasf
+    return dsasf
+
+def unflatten_ssf_dict(q: FlattenedDict) -> SSf:
+    dssf = {}
+    for (ss, f) in q:
+        dsf = dssf.get(ss[0], {})
+        dsf[ss[1]] = f
+        dssf[ss[0]] = dsf
+    return dssf
+
+def get_rv_gen_func_single(prob_dict: Mapping[Any, float])\
+        -> Callable[[], S]:
+    outcomes, probabilities = zip(*prob_dict.items())
+    rvd = rv_discrete(values=(range(len(outcomes)), probabilities))
+    
+    return lambda rvd=rvd, outcomes=outcomes: outcomes[rvd.rvs(size=1)[0]]

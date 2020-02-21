@@ -35,3 +35,12 @@ def is_approx_eq(a: float, b: float) -> bool:
 def sum_dicts(dicts: Sequence[Mapping[X, float]]) -> Mapping[X, float]:
     return {k: sum(d.get(k, 0) for d in dicts)
             for k in set.union(*[set(d1) for d1 in dicts])}
+
+def merge_dicts(d1: FlattenedDict, d2: FlattenedDict, operation):
+    merged = d1 + d2
+    from itertools import groupby
+    from operator import itemgetter
+    from functools import reduce
+    sortd = sorted(merged, key=itemgetter(0))
+    grouped = groupby(sortd, key=itemgetter(0))
+    return [(key, reduce(operation, [x for _, x in group])) for key, group in grouped]
