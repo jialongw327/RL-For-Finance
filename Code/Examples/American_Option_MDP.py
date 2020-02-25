@@ -20,12 +20,12 @@ class AmericanOptionMDP():
         T = self.T
         K = self.K
         prob = self.p
-        state = [(((1.0 + u)**i)*((1+d)**(t-i))*s0, t) for t in range(1, T+1) for i in range(t+1)]
-        tr = {s:{'Exercise':{'Terminal': (1.0, max(K - s[0],0))}, \
+        state = [(((1.0 + u)**(t-i))*((1.0 + d)**i)*s0, t) for t in range(1,T+1) for i in range(t+1)]
+        tr = {s:{'Exercise':{'Terminal': (1.0, max([K - s[0], 0]))}, \
                              'Stay':{(round(s[0]*(1+u),10), s[1]+1):(prob, 0.0), \
                              (round(s[0]*(1+d),10), s[1]+1):(1 - prob, 0.0)} } \
                             if s[1] <= T-1 else \
-     {'Exercise': {'Terminal': (1.0,  max(K - s[0],0))}} for s in state}
+     {'Exercise': {'Terminal': (1.0,  max([K - s[0],0]))}} for s in state}
     
         state = [(round(s[0],10),s[1]) for s in state]
         tr = {(round(s[0],10), s[1]): v for s,v in tr.items()}
@@ -37,11 +37,11 @@ class AmericanOptionMDP():
         
 
 if __name__ == '__main__':
-    T = 2
+    T = 30
     s0 = 100
     u = 0.05
     d = -0.03
-    p = 0.56
+    p = 0.399
     K = 105
     
     gamma = 1 
@@ -65,31 +65,4 @@ if __name__ == '__main__':
     print('Value of an American Put by policy iteration: ')
     print(val_list[0][1]*p+ val_list[1][1]*(1-p))
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-if __name__ == '__main__':
-    # Generate mdp
-    T = 20
-    s0 = 100
-    u = 0.05
-    d = -0.03
-    p = 0.56
-    K = 105
-    
-    test_mdp = AmericanOptionMDP(T,p,u,d,K,s0)
-    state = test_mdp.build_graph()
-    
 

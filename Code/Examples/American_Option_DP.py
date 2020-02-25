@@ -18,7 +18,7 @@ class AmericanOptionDP():
         cash_flow_matrix = np.zeros((self.T+1, self.T+1))
         for i in range(T+1):
             for j in range(i,T+1):
-                price_matrix[i, j] = ((1+u)**(j-i))*((1+d)**(i))
+                price_matrix[i, j] = ((1+u)**(i))*((1+d)**(j-i))
                 if (price_matrix[i, j]) != 0:
                     cash_flow_matrix[i,j] = (self.K - self.s0*price_matrix[i, j])*((self.K - self.s0*price_matrix[i, j])>0)
         #price_matrix = self.s0*price_matrix.T
@@ -55,26 +55,25 @@ class AmericanOptionDP():
                 max_price_seq[i] = self.price_matrix[i - int(max_price_loc[i]),i]
             
         return max_price_seq, self.value_matrix[0,0]
-        
-    def build_mdp_graph(self):
-        return ValueError
+
         
 if __name__ == '__main__':
-    T = 2
+    T = 30
     s0 = 100
     u = 0.05
     d = -0.03
-    p = 0.56
+    p = 0.399
     K = 105
     
     test = AmericanOptionDP(T,p,u,d,K,s0)
     price_matrix, cash_flow_matrix = test.find_matrices()
     action_matrix, value_matrix = test.find_value_matrix()
     max_price_seq, temp = test.find_max_price_sequence()
-    #print(cash_flow_matrix)
+    print('Value of an American Put: ')
+    print(temp)
     
     start = len(max_price_seq[:-1][max_price_seq[:-1]==-1])
-    end = 1
+    end = T-1
     x_axis = np.linspace(start, end, end - start +1)
     price = max_price_seq[max_price_seq>0]
     plt.plot(x_axis, price)

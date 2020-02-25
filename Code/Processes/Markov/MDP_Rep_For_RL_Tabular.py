@@ -3,8 +3,6 @@ sys.path.append('C:\\Users\\ThinkPad\\Desktop\\CME241\\Push\\Code\\Utils')
 sys.path.append('C:\\Users\\ThinkPad\\Desktop\\CME241\\Push\\Code\\Processes\\Markov')
 from typing import Mapping, Set, Callable, Tuple, Generic
 
-from Markov_Functions import get_rv_gen_func_single
-
 from Generic_TypeVars import S, A
 
 Type1 = Mapping[S, Mapping[A, Callable[[], Tuple[S, float]]]]
