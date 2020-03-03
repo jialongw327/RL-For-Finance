@@ -6,11 +6,12 @@ from typing import Tuple
 
 from MRP_Refined import MRPRefined
 from MDP import MDP
+from MDP_Rep_For_RL_Tabular import MDPRepForRLTabular
 from Policy import Policy
 from Standard_TypeVars import SASf, SAf, SASTff
 from General_Utils import zip_dict_of_tuple, merge_dicts
 from Markov_Functions import flatten_sasf_dict, mdp_rep_to_mrp_rep1, unflatten_sasf_dict
-from Markov_Functions import flatten_ssf_dict, unflatten_ssf_dict
+from Markov_Functions import flatten_ssf_dict, unflatten_ssf_dict, get_state_reward_gen_dict
 
 import numpy as np
 
@@ -63,7 +64,16 @@ class MDPRefined(MDP):
             self.gamma
         )
         
-    
+    def get_mdp_rep_for_rl_tabular(self) ->  MDPRepForRLTabular:
+        return  MDPRepForRLTabular(
+            state_action_dict=self.state_action_dict,
+            terminal_states=self.terminal_states,
+            state_reward_gen_dict=get_state_reward_gen_dict(
+                self.transitions,
+                self.rewards_refined
+            ),
+            gamma=self.gamma
+        )     
 
 if __name__ == '__main__':
     # data = {

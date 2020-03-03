@@ -20,6 +20,7 @@ class AmericanOptionMDP():
         T = self.T
         K = self.K
         prob = self.p
+        s0 = self.s0
         state = [(((1.0 + u)**(t-i))*((1.0 + d)**i)*s0, t) for t in range(1,T+1) for i in range(t+1)]
         tr = {s:{'Exercise':{'Terminal': (1.0, max([K - s[0], 0]))}, \
                              'Stay':{(round(s[0]*(1+u),10), s[1]+1):(prob, 0.0), \
