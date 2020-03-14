@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 
 class TradeExecution():
     def __init__(self):
-        self.iteration = 3000000
+        self.iteration = 9500000
         
         self.T_size = 6 # length of Time
         self.P_size = 100 # Size of Spread of Prices
@@ -74,6 +74,7 @@ class TradeExecution():
                              +self.gamma*Qmax-Qnow)
             if method == "Sarsa":
                 Nt_next = A[(t_next, Pt_next, Rt_next)]
+                Qnow = Q[(t, Pt, Rt)][Nt]
                 Qnext = Q[(t_next, Pt_next, Rt_next)][Nt_next]
                 Q[(t, Pt, Rt)][Nt] = Qnow+\
                         self.alpha*(reward+self.gamma*Qnext-Qnow)
@@ -104,7 +105,7 @@ class TradeExecution():
             
             epsilon=1-i/self.iteration
             
-            Q, A = self.Episode(Q, A, epsilon, "Q-learning")
+            Q, A = self.Episode(Q, A, epsilon, method)
             #print(Q)
             
             #Plotting 
@@ -146,4 +147,4 @@ class TradeExecution():
         
         
 obj = TradeExecution()
-obj.Algorithm("Q-learning")
+obj.Algorithm("Sarsa")
